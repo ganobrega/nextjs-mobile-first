@@ -2,6 +2,18 @@
 
 This example shows how to do a [optimized website for mobile](https://support.google.com/google-ads/answer/7323900?hl=en) and a [responsive website for desktop](https://web.dev/responsive-web-design-basics/) in the same stack.
 
+[>> Check the demo <<](https://nextjs-mobile-first.herokuapp.com/) and use **Lighthouse** to check the performance!
+
+## Lighthouse Report
+
+### Desktop Responsive Website
+
+![](./docs/Captura%20de%20Tela%202020-07-28%20às%2001.39.27.png)
+
+### Optimized Mobile Website
+
+![](./docs/Captura%20de%20Tela%202020-07-28%20às%2001.40.04.png)
+
 ## Requirements
 
 - [NextJS with Custom Server](https://nextjs.org/docs/advanced-features/custom-server)
