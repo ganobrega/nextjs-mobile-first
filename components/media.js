@@ -1,49 +1,53 @@
-import React, {useContext, useEffect} from 'react';
-import { useMediaQuery } from 'react-responsive';
+import React, { useContext, useEffect } from 'react';
+import { createMedia } from '@artsy/fresnel';
 
 export const Context = React.createContext();
 
 /**
  * Components
  */
-export const Mobile = ({children}) => {
-  const isMobile = useMobile();
-
-  return isMobile ? children : null
-}
-
-export const Desktop = ({children}) => {
-  const isDesktop = useDesktop();
-
-  return isDesktop ? children : null
-}
-
-export const NotDesktop = ({children}) => {
-  const notDesktop = useNotDesktop();
-
-  return notDesktop ? children : null
-}
-
-/**
- * HOOKS
- */
-export const useMobile = () => {
+export const Mobile = ({ children }) => {
   const context = useContext(Context);
-  const isMobile = useMediaQuery({maxWidth: 576});
 
-  return isMobile || context === 'phone'
-}
+  return context === 'phone' ? (
+    children
+  ) : (
+    <Media lessThan="lg">{children}</Media>
+  );
+};
 
-export const useNotDesktop = () => {
+export const Desktop = ({ children }) => {
   const context = useContext(Context);
-  const notDesktop = useMediaQuery({maxWidth: 1024});
 
-  return notDesktop && context !== 'desktop'
-}
+  return context === 'desktop' ? (
+    <Media greaterThan="md">{children}</Media>
+  ) : null;
+};
 
-export const useDesktop = () => {
+export const NotDesktop = ({ children }) => {
   const context = useContext(Context);
-  const isDesktop = useMediaQuery({minWidth: 1024});
 
-  return isDesktop
-}
+  if (context === 'phone') {
+    return children;
+  }
+
+  return context !== 'desktop' ? (
+    children
+  ) : (
+    <Media lessThan="lg">{children}</Media>
+  );
+};
+
+const Medias = createMedia({
+  breakpoints: {
+    xs: 0,
+    sm: 576,
+    md: 768,
+    lg: 1024,
+    xl: 1200,
+  },
+});
+
+export const mediaStyles = Medias.createMediaStyle();
+
+export const { Media, MediaContextProvider } = Medias;

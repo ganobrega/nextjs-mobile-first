@@ -1,33 +1,44 @@
-import App from "next/app";
-import { ThemeProvider } from "styled-components";
-import { Context as MediaContext } from '../components/media';
+import App from 'next/app';
+import { ThemeProvider } from 'styled-components';
+import {
+  Context as MediaContext,
+  MediaContextProvider,
+} from '../components/media';
+
+import '../assets/index.css';
 
 const theme = {
-    colors: {
-      primary: '#0070f3',
-    },
-  };
+  colors: {
+    primary: '#0070f3',
+  },
+};
 
 export default class MyApp extends App {
+  static async getInitialProps(ctx) {
+    const appProps = await App.getInitialProps(ctx);
 
-    static async getInitialProps(ctx) {
-        const appProps = await App.getInitialProps(ctx);
+    const device = ctx.ctx.req.device;
 
-        // console.log({ctx})
-        const device = ctx.ctx.req.device;
-        
-        return { ...appProps, device }
-    }
+    return { ...appProps, device };
+  }
 
   render() {
     const { Component, pageProps, device } = this.props;
 
     return (
-        <MediaContext.Provider value={device}>
+      <MediaContext.Provider value={device}>
+        {device === 'desktop' ? (
+          <MediaContextProvider>
             <ThemeProvider theme={theme}>
-                <Component {...pageProps} />
+              <Component {...pageProps} />
             </ThemeProvider>
-        </MediaContext.Provider>
+          </MediaContextProvider>
+        ) : (
+          <ThemeProvider theme={theme}>
+            <Component {...pageProps} />
+          </ThemeProvider>
+        )}
+      </MediaContext.Provider>
     );
   }
 }
