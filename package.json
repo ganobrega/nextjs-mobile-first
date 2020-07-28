@@ -1,6 +1,10 @@
 {
-  "name": "dynamic-routing",
+  "name": "nextjs-mobile-first",
   "version": "1.0.0",
+  "author": {
+    "name": "Gabriel Nobrega",
+    "url": "https://github.com/ganobrega"
+  },
   "scripts": {
     "dev": "node server.js",
     "start": "cross-env NODE_ENV=production node server.js",
