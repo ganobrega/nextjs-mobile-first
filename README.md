@@ -1,50 +1,171 @@
-# Dynamic Routing example
+# NextJS Mobile First (Experimental)
 
-This example shows how to do [dynamic routing](https://nextjs.org/docs/routing/dynamic-routes) in Next.js. It contains two dynamic routes:
+This example shows how to do a [optimized website for mobile](https://support.google.com/google-ads/answer/7323900?hl=en) and a [responsive website for desktop](https://web.dev/responsive-web-design-basics/) in the same stack.
 
-1. `pages/post/[id]/index.js`
-   - e.g. matches `/post/my-example` (`/post/:id`)
-1. `pages/post/[id]/[comment].js`
-   - e.g. matches `/post/my-example/a-comment` (`/post/:id/:comment`)
+## Requirements
 
-These routes are automatically matched by the server.
-You can use `next/link` as displayed in this example to route to these pages client side.
+- [NextJS with Custom Server](https://nextjs.org/docs/advanced-features/custom-server)
+- [NextJS with styled-components SSR](https://github.com/vercel/next.js/tree/canary/examples/with-styled-components)
+- [@artsy/fresnel](https://npmjs.com/package/@artsy/fresnel)
+- [device](https://npmjs.com/package/device)
 
-## Deploy your own
+## Setup
 
-Deploy the example using [Vercel](https://vercel.com):
+### server.js
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/import/project?template=https://github.com/vercel/next.js/tree/canary/examples/dynamic-routing)
+```diff
++ const device = require('device');
 
-## How to use
+app.prepare().then(() => {
+   createServer((req, res) => {
++     const _device = device(req.headers['user-agent']);
++     req.device = _device.type;
 
-### Using `create-next-app`
-
-Execute [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) with [npm](https://docs.npmjs.com/cli/init) or [Yarn](https://yarnpkg.com/lang/en/docs/cli/create/) to bootstrap the example:
-
-```bash
-npx create-next-app --example dynamic-routing dynamic-routing-app
-# or
-yarn create next-app --example dynamic-routing dynamic-routing-app
+      handle(req, res, parsedUrl)
+   }).listen(3000, (err) => {
+      if (err) throw err
+      console.log('> Ready on http://localhost:3000')
+   })
+})
 ```
 
-### Download manually
+### \_document.js
 
-Download the example:
+#### with styled-components SSR
 
-```bash
-curl https://codeload.github.com/vercel/next.js/tar.gz/canary | tar -xz --strip=2 next.js-canary/examples/dynamic-routing
-cd dynamic-routing
+```diff
+import Document from 'next/document';
+import { ServerStyleSheet } from 'styled-components';
++import { mediaStyles } from '../components/media';
+
+export default class MyDocument extends Document {
+  static async getInitialProps(ctx) {
+    const sheet = new ServerStyleSheet();
+    const originalRenderPage = ctx.renderPage;
+
+    try {
+      ctx.renderPage = () =>
+        originalRenderPage({
+          enhanceApp: (App) => (props) =>
+            sheet.collectStyles(<App {...props} />),
+        });
+
+      const initialProps = await Document.getInitialProps(ctx);
+      return {
+        ...initialProps,
+        styles: (
+          <>
++            {ctx.req.device === 'desktop' && (
++             <style type="text/css" dangerouslySetInnerHTML={{ __html: mediaStyles }} />
++            )}
+            {initialProps.styles}
+            {sheet.getStyleElement()}
+          </>
+        ),
+      };
+    } finally {
+      sheet.seal();
+    }
+  }
+}
+
 ```
 
-Install it and run:
+### \_app.js
 
-```bash
-npm install
-npm run dev
-# or
-yarn
-yarn dev
+```diff
+import App from 'next/app';
+import { ThemeProvider } from 'styled-components';
++import { Context as MediaContext, MediaContextProvider, } from '../components/media';
+
+
+export default class MyApp extends App {
++  static async getInitialProps(ctx) {
++    const appProps = await App.getInitialProps(ctx);
++
++    const device = ctx.ctx.req.device;
++
++    return { ...appProps, device };
++  }
+
+  render() {
+    const { Component, pageProps, device } = this.props;
+
+    return (
++      <MediaContext.Provider value={device}>
++        {device === 'desktop' ? (
++          <MediaContextProvider>
++            <ThemeProvider theme={theme}>
++              <Component {...pageProps} />
++            </ThemeProvider>
++          </MediaContextProvider>
++        ) : (
++          <ThemeProvider theme={theme}>
++            <Component {...pageProps} />
++          </ThemeProvider>
++        )}
++      </MediaContext.Provider>
+    );
+  }
+}
+
 ```
 
-Deploy it to the cloud with [Vercel](https://vercel.com/import?filter=next.js&utm_source=github&utm_medium=readme&utm_campaign=next-example) ([Documentation](https://nextjs.org/docs/deployment)).
+### components/media.js
+
+```
+import React, { useContext } from 'react';
+import { createMedia } from '@artsy/fresnel';
+
+export const Context = React.createContext();
+
+/**
+ * Components
+ */
+export const Mobile = ({ children }) => {
+  const context = useContext(Context);
+
+  return context === 'phone' ? (
+    children
+  ) : (
+    <Media lessThan="lg">{children}</Media>
+  );
+};
+
+export const Desktop = ({ children }) => {
+  const context = useContext(Context);
+
+  return context === 'desktop' ? (
+    <Media greaterThan="md">{children}</Media>
+  ) : null;
+};
+
+export const NotDesktop = ({ children }) => {
+  const context = useContext(Context);
+
+  if (context === 'phone') {
+    return children;
+  }
+
+  return context !== 'desktop' ? (
+    children
+  ) : (
+    <Media lessThan="lg">{children}</Media>
+  );
+};
+
+const Medias = createMedia({
+  breakpoints: {
+    xs: 0,
+    sm: 576,
+    md: 768,
+    lg: 1024,
+    xl: 1200,
+  },
+});
+
+export const mediaStyles = Medias.createMediaStyle();
+
+export const { Media, MediaContextProvider } = Medias;
+
+```
